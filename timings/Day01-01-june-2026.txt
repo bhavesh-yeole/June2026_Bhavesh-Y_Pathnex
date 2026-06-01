@@ -1,0 +1,12 @@
+Today's Task
+2 Hours - Online session in the morning
+1 Hour - Aws
+2 Hours -Ec2 Install
+1 Hour -Git
+
+
+Tommorrow's Task
+Will learn Linux
+Basic Linuxinstallation
+Ec2 Connect
+Git hub connection
