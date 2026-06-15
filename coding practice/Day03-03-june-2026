@@ -1,0 +1,289 @@
+##  Ansible — Create User
+
+
+- name: Create Pathnex user
+  hosts: all
+  become: yes
+
+  tasks:
+    - name: Create user pathnex-admin
+      user:
+        name: pathnex-admin
+        shell: /bin/bash
+
+
+
+
+---
+- name: Create DevOps user
+  hosts: all
+  become: yes
+
+  tasks:
+    - name: Create user bhavesh-admin
+      user:
+        name: bhavesh-admin
+        shell: /bin/bash
+
+
+
+
+##  Terraform — Security Group (r6i.4xlarge EC2)
+
+
+provider "aws" {
+  region = "us-east-1"
+}
+
+resource "aws_security_group" "PathnexSG" {
+  name        = "PathnexSG"
+  description = "Pathnex SG for SSH"
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+resource "aws_instance" "PathnexEC2" {
+  ami                    = "ami-0abcd1234abcd1234"
+  instance_type          = "r6i.4xlarge"
+  vpc_security_group_ids = [aws_security_group.PathnexSG.id]
+
+  tags = {
+    Name = "Pathnex-EC2"
+  }
+}
+
+
+
+
+
+provider "aws" {
+  region = "ap-south-1"
+}
+
+resource "aws_security_group" "BhaveshSG" {
+  name        = "BhaveshSG"
+  description = "Security group for SSH access"
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "Bhavesh-SG"
+  }
+}
+
+resource "aws_instance" "DevServer" {
+  ami                    = "ami-003ff0e12738bdf26"
+  instance_type          = "t2.micro"
+  vpc_security_group_ids = [aws_security_group.BhaveshSG.id]
+
+  tags = {
+    Name = "Bhavesh-Dev-Server"
+  }
+}
+
+
+
+
+##  Kubernetes — Add Environment Variables
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pathnex-env-pod
+spec:
+  containers:
+    - name: app
+      image: nginx
+      env:
+        - name: APP_ENV
+          value: "production"
+
+
+
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: bhavesh-nginx-pod
+
+spec:
+  containers:
+    - name: nginx-container
+      image: nginx
+
+      env:
+        - name: APP_MODE
+          value: "development"
+
+        - name: OWNER
+          value: "Bhavesh"
+
+
+
+
+##  Shell Script — Check File Exists
+
+#!/bin/bash
+FILE="/tmp/pathnex.txt"
+
+if [ -f "$FILE" ]; then
+  echo "File exists"
+else
+  echo "File does not exist"
+fi
+
+
+
+#!/bin/bash
+
+FILE="/home/ec2-user/devops.txt"
+
+if [ -f "$FILE" ]; then
+    echo "File is available"
+else
+    echo "File not found"
+fi
+
+
+
+
+##  Jenkins Pipeline — NodeJS Build
+
+
+pipeline {
+    agent any
+    tools {
+        nodejs 'NodeJS-16'
+    }
+    stages {
+        stage('Checkout') {
+            steps {
+                git url: 'https://github.com/Pathnex/sample-node-app.git'
+            }
+        }
+        stage('Install Dependencies') {
+            steps {
+                sh 'npm install'
+            }
+        }
+        stage('Run Tests') {
+            steps {
+                sh 'npm test'
+            }
+        }
+        stage('Build') {
+            steps {
+                sh 'npm run build'
+            }
+        }
+    }
+}
+
+
+
+
+
+pipeline {
+    agent any
+
+    tools {
+        nodejs 'NodeJS-16'
+    }
+
+    stages {
+
+        stage('Checkout Code') {
+            steps {
+                git url: 'https://github.com/bhavesh-yeole/June2026_Bhavesh-Y_Pathnex.git'
+            }
+        }
+
+        stage('Install Packages') {
+            steps {
+                sh 'npm install'
+            }
+        }
+
+        stage('Run Test Cases') {
+            steps {
+                sh 'npm test'
+            }
+        }
+
+        stage('Build Application') {
+            steps {
+                sh 'npm run build'
+            }
+        }
+    }
+}
+
+
+
+
+##  GitLab CI — NodeJS Build
+
+stages:
+  - install
+  - test
+  - build
+
+node-install:
+  stage: install
+  image: node:16
+  script:
+    - git clone https://github.com/Pathnex/sample-node-app.git
+    - cd sample-node-app
+    - npm install
+
+node-test:
+  stage: test
+  image: node:16
+  script:
+    - cd sample-node-app
+    - npm test
+
+node-build:
+  stage: build
+  image: node:16
+  script:
+    - cd sample-node-app
+    - npm run build
+
+
+
+stages:
+  - install
+  - test
+  - build
+
+install-packages:
+  stage: install
+  image: node:18
+
+  script:
+    - npm install
+
+run-tests:
+  stage: test
+  image: node:18
+
+  script:
+    - npm test
+
+build-app:
+  stage: build
+  image: node:18
+
+  script:
+    - npm run build
